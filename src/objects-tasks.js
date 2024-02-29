@@ -363,32 +363,109 @@ function group(array, keySelector, valueSelector) {
  */
 
 const cssSelectorBuilder = {
-  element(/* value */) {
-    throw new Error('Not implemented');
+  result: '',
+  isElementAdded: false,
+  isIdAdded: false,
+  isPseudoElementAdded: false,
+  order: 0,
+
+  checkForRepeat(source) {
+    switch (source) {
+      case 'element':
+        if (this.isElementAdded) {
+          throw new Error(
+            'Element, id and pseudo-element should not occur more then one time inside the selector'
+          );
+        }
+        break;
+      case 'id':
+        if (this.isIdAdded) {
+          throw new Error(
+            'Element, id and pseudo-element should not occur more then one time inside the selector'
+          );
+        }
+        break;
+      case 'pseudoElement':
+        if (this.isPseudoElementAdded) {
+          throw new Error(
+            'Element, id and pseudo-element should not occur more then one time inside the selector'
+          );
+        }
+        break;
+      default:
+    }
   },
 
-  id(/* value */) {
-    throw new Error('Not implemented');
+  checkOrder(currentOrder) {
+    if (currentOrder < this.order) {
+      throw new Error(
+        'Selector parts should be arranged in the following order: element, id, class, attribute, pseudo-class, pseudo-element'
+      );
+    }
   },
 
-  class(/* value */) {
-    throw new Error('Not implemented');
+  element(value) {
+    const newObj = { ...this };
+    newObj.checkForRepeat('element');
+    newObj.checkOrder(0);
+    newObj.result = value;
+    newObj.isElementAdded = true;
+    newObj.order = 0;
+    return newObj;
   },
 
-  attr(/* value */) {
-    throw new Error('Not implemented');
+  id(value) {
+    const newObj = { ...this };
+    newObj.checkForRepeat('id');
+    newObj.checkOrder(1);
+    newObj.result = `${newObj.result}#${value}`;
+    newObj.isIdAdded = true;
+    newObj.order = 1;
+    return newObj;
   },
 
-  pseudoClass(/* value */) {
-    throw new Error('Not implemented');
+  class(value) {
+    const newObj = { ...this };
+    newObj.checkOrder(2);
+    newObj.result = `${newObj.result}.${value}`;
+    newObj.order = 2;
+    return newObj;
   },
 
-  pseudoElement(/* value */) {
-    throw new Error('Not implemented');
+  attr(value) {
+    const newObj = { ...this };
+    newObj.checkOrder(3);
+    newObj.result = `${newObj.result}[${value}]`;
+    newObj.order = 3;
+    return newObj;
   },
 
-  combine(/* selector1, combinator, selector2 */) {
-    throw new Error('Not implemented');
+  pseudoClass(value) {
+    const newObj = { ...this };
+    newObj.checkOrder(4);
+    newObj.result = `${newObj.result}:${value}`;
+    newObj.order = 4;
+    return newObj;
+  },
+
+  pseudoElement(value) {
+    const newObj = { ...this };
+    newObj.checkForRepeat('pseudoElement');
+    newObj.checkOrder(5);
+    newObj.result = `${newObj.result}::${value}`;
+    newObj.isPseudoElementAdded = true;
+    newObj.order = 5;
+    return newObj;
+  },
+
+  combine(selector1, combinator, selector2) {
+    const newObj = { ...this };
+    newObj.result = `${selector1.result} ${combinator} ${selector2.result}`;
+    return newObj;
+  },
+
+  stringify() {
+    return this.result;
   },
 };
 
